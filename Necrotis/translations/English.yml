@@ -1,0 +1,24 @@
+item: ''
+enemy_necromancer: 'Necromancer'
+topic_necromancer: 'Necromancer'
+label_necromancer: 'Necromancer'
+lore_necromancer: "The necromancer's power was sealed within a cursed mummy, ensuring that whoever awakened it would inherit both the ancient sorcerer's dark magic and his insatiable hunger for souls."
+prop_necromancer_cup: 'Altar'
+item_necrokeyfragment: "Necro Key Fragment"
+item_necrokeyfragment_desc: 'Piece of the necro key'
+item_necrokey: 'Necro Key'
+item_necrokey_desc: "Opens the gate to the necromancer's lair"
+item_necromancer_heart: "Necromancer Heart"
+item_necromancer_heart_desc: "Heart is still thumping between your fingers"
+piece_necromancer_gate: "Necro Gate"
+piece_necromancer_gate_desc: "Requires Necro Key to open"
+piece_necromancer_lore: 'Runestone'
+piece_necromancer_grate: "Iron Gate"
+piece_necromancer_grate_desc: 'Requires Necro Key to open'
+piece_necromancer_bone_pile: 'Necro Bone Pile'
+piece_necromancer_bone_pile_desc: 'Conjures minions from beyond the grave'
+random_necromancer_speak1: "Fear the dark power and an insatiable hunger for souls."
+random_necromancer_speak2: 'From the depths of darkness, we call the powers of the eternally damned'
+random_necromancer_speak3: 'Rise forth the shadows and specters'
+msg_necromancer_spawn: 'Unholy manifestation of dark magic has appeared'
+msg_necromancer_death: 'Begone the powers of the dark lord'
