@@ -22,7 +22,7 @@ namespace Necrotis
     public class NecrotisPlugin : BaseUnityPlugin
     {
         internal const string ModName = "Necrotis";
-        internal const string ModVersion = "1.0.0";
+        internal const string ModVersion = "1.0.1";
         internal const string Author = "RustyMods";
         private const string ModGUID = Author + "." + ModName;
         private static readonly string ConfigFileName = ModGUID + ".cfg";
@@ -85,6 +85,7 @@ namespace Necrotis
             SwordNecro.Crafting.Add(global::Managers.CraftingTable.Forge, 4);
             SwordNecro.RequiredItems.Add("FlametalNew", 10);
             SwordNecro.RequiredItems.Add("NecromancerTotem", 1);
+            SwordNecro.RequiredUpgradeItems.Add("FlametalNew", 5);
             SwordNecro.AddHitEffect("vfx_HitSparks");
             SwordNecro.AddHitEffect("sfx_sword_hit");
             SwordNecro.AddHitEffect("fx_hit_camshake");
@@ -102,6 +103,7 @@ namespace Necrotis
             SwordNecro1.RequiredItems.Add("SwordNecro", 1);
             SwordNecro1.RequiredItems.Add("NecromancerHeart", 3);
             SwordNecro1.RequiredItems.Add("YagluthDrop", 1);
+            SwordNecro1.RequiredUpgradeItems.Add("FlametalNew", 5);
             SwordNecro1.AddHitEffect("vfx_HitSparks");
             SwordNecro1.AddHitEffect("sfx_sword_hit");
             SwordNecro1.AddHitEffect("fx_hit_camshake");
@@ -110,9 +112,16 @@ namespace Necrotis
             SwordNecro1.AddBlockEffect("fx_block_camshake");
             SwordNecro1.AddTriggerEffect("fx_swing_camshake");
             SwordNecro1.AddStartEffect("sfx_sword_swing");
-            
+
+            Item TrophyNecromancer = new Item(_AssetBundle, "TrophyNecromancer");
+            TrophyNecromancer.Name.English("Necromancer Trophy");
+            TrophyNecromancer.Description.English(
+                "The necromancer's severed arm, taken as a trophy, pulses with residual dark magic and a lingering, malevolent will.");
+
             FaunaManager.ProjectileSpawnAbility SwordSpawner = new FaunaManager.ProjectileSpawnAbility("sword_necro_spawn", _AssetBundle);
             SwordSpawner.AddSpawn("Draugr_Friendly");
+            // SwordSpawner.AddSpawn("Abomination_Friendly");
+            // SwordSpawner.AddSpawn("Wraith_Friendly");
             SwordSpawner.AddPreSpawnEffect("fx_summon_skeleton_spawn");
             SwordSpawner.AddPreSpawnEffect("fx_Fader_Fissure_Prespawn");
             
@@ -129,7 +138,7 @@ namespace Necrotis
                 m_maxSpawned = 0,
             };
             Necromancer.SetBoss(true);
-            Necromancer.AddDrop("Entrails", 5, 10, 1f);
+            Necromancer.AddDrop("TrophyNecromancer", 1, 1, 1f);
             Necromancer.AddDrop("Bloodbag", 10, 20, 1f);
             Necromancer.AddDrop("SwordNecro", 1, 1, 1f);
             Necromancer.AddDrop("NecromancerHeart", 3, 10, 1f);
@@ -145,13 +154,14 @@ namespace Necrotis
             Necromancer.AddIdleSound("sfx_wraith_idle");
             Necromancer.AddIdleSound("sfx_vulture_alert");
             Necromancer.AddWaterEffect("vfx_water_surface");
-            Necromancer.CloneFootStepsFrom("Draugr");
+            Necromancer.CloneFootStepsFrom("Troll");
             Necromancer.SetBossEvent("Necromancer");
             Necromancer.EditAttack("Necromancer_Attack", hitEffects: new(){"vfx_HitSparks", "sfx_sword_hit"},  trailEffects: new(){"sfx_kromsword_swing"});
             Necromancer.EditAttack("Necromancer_Rage", hitEffects: new(){"vfx_HitSparks", "sfx_sword_hit"},  trailEffects: new(){"sfx_kromsword_swing"});
             Necromancer.EditAttack("Necromancer_Fire", hitEffects:new(){"vfx_clubhit", "sfx_clubhit"}, startEffects:new(){"sfx_kromsword_swing"});
             Necromancer.EditAttack("Necromancer_Protect", hitEffects:new(){"vfx_clubhit", "sfx_clubhit"}, startEffects:new(){"sfx_kromsword_swing"}, triggerEffects:new(){"fx_swing_camshake"});
             Necromancer.EditAttack("Necromancer_Taunt", hitEffects:new(){"vfx_clubhit", "sfx_clubhit"}, startEffects:new(){"sfx_kromsword_swing"}, triggerEffects: new(){"DvergerStaffHeal_aoe"});
+            Necromancer.EditAttack("Necromancer_Dodge", hitEffects:new(){"vfx_clubhit", "sfx_clubhit"}, startEffects:new(){"sfx_kromsword_swing"});
             
             FaunaManager.ProjectileData NecromancerProjectile = new FaunaManager.ProjectileData("Necromancer_Projectile_Beam", _AssetBundle);
             NecromancerProjectile.AddHitEffect("fx_goblinking_beam_hit");
@@ -159,21 +169,23 @@ namespace Necrotis
             FaunaManager.ProjectileData Fireball = new FaunaManager.ProjectileData("Necromancer_Projectile_Ball", _AssetBundle);
             Fireball.AddHitEffect("fx_DvergerMage_Fire_hit");
             Fireball.AddSpawnOnHit("DvergerStaffFire_clusterbomb_aoe");
-            Fireball.AddSpawnOnHit("Surtling");
-            Fireball.SetSpawnOnHitChance(0.5f);
-
+            Fireball.AddSpawnOnHit("Charred_Twitcher");
+            Fireball.SetSpawnOnHitChance(0.4f);
+            Fireball.SetConfigKeys("Fireball", "Necromancer");
+            
             FaunaManager.ProjectileData Meteor = new FaunaManager.ProjectileData("Necromancer_Projectile_Meteor", _AssetBundle);
             Meteor.AddHitEffect("fx_fader_meteor_hit");
             Meteor.AddHitEffect("fx_Fader_Fissure_Prespawn");
             Meteor.SetSpawnOnHitChance(0.5f);
-            Meteor.AddRandomSpawnOnHit("Draugr_Elite");
-            Meteor.AddRandomSpawnOnHit("Wraith");
-            Meteor.AddRandomSpawnOnHit("Skeleton");
-            Meteor.AddRandomSpawnOnHit("Ghost");
+            Meteor.AddSpawnOnHit("Charred_Mage");
+            Meteor.SetConfigKeys("Meteor", "Necromancer");
 
             FaunaManager.ProjectileSpawnAbility MistileSpawner = new FaunaManager.ProjectileSpawnAbility("Necromancer_Mistile_Spawn", _AssetBundle);
             MistileSpawner.AddSpawn("Mistile_Clone");
             MistileSpawner.AddSpawnEffect("fx_DvergerMage_MistileSpawn");
+            
+            FaunaManager.AOEData NecromancerAOE = new FaunaManager.AOEData("Necromancer_AOE", _AssetBundle);
+            NecromancerAOE.AddHitEffect("Fader_WallOfFire_AOE");
         }
 
         public void LoadPieces()

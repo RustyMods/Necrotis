@@ -81,11 +81,6 @@ public class FaunaManager
                 }
             }
         }
-        
-        var saddleBeast = ZNetScene.instance.GetPrefab("SaddleBeast");
-        var trophy = __instance.GetItemPrefab("TrophySaddleBeast");
-        var saddle = saddleBeast.GetComponentInChildren<Sadle>(true);
-        if (saddle) saddle.m_mountIcon = trophy.GetComponent<ItemDrop>().m_itemData.GetIcon();
     }
 
     private static void EditTame(ZNetScene __instance, Critter critter)
@@ -543,13 +538,13 @@ public class FaunaManager
         Dictionary<string, GameObject> defaultItems = new();
         if (!critter.m_replaceAttacks)
         {
-            foreach (var defaultItem in humanoid.m_defaultItems)
+            foreach (GameObject? defaultItem in humanoid.m_defaultItems)
             {
                 defaultItems[defaultItem.name] = defaultItem;
             }
         }
         
-        foreach (var attack in critter.m_attacks)
+        foreach (Critter.Attack? attack in critter.m_attacks)
         {
             if (!attack.m_custom)
             {
@@ -573,7 +568,7 @@ public class FaunaManager
     private static void AddDamages(Critter critter, ref GameObject[] array)
     {
         if (array.Length == 0) return;
-        foreach (var prefab in array)
+        foreach (GameObject prefab in array)
         {
             if (!prefab.TryGetComponent(out ItemDrop component)) continue;
             component.m_itemData.m_shared.m_damages.Add(critter.m_damages);
@@ -772,11 +767,26 @@ public class FaunaManager
         }
 
         RegisterProjectiles(__instance);
+        RegisterAOE(__instance);
     }
 
+    private static void RegisterAOE(ZNetScene __instance)
+    {
+        foreach (AOEData data in m_aoe)
+        {
+            GameObject prefab = data.m_bundle.LoadAsset<GameObject>(data.m_name);
+            if (!prefab) continue;
+
+            if (!prefab.TryGetComponent(out Aoe aoe)) continue;
+            
+            AddCustomEffectList(data.m_hitEffects, ref aoe.m_hitEffects, __instance);
+            
+            RegisterToZNetScene(__instance, prefab);
+        }
+    }
     private static void RegisterProjectiles(ZNetScene __instance)
     {
-        foreach (var projectile in m_projectiles)
+        foreach (ProjectileData? projectile in m_projectiles)
         {
             GameObject prefab = projectile.m_bundle.LoadAsset<GameObject>(projectile.m_name);
             if (!prefab) continue;
@@ -791,7 +801,18 @@ public class FaunaManager
                         component.m_spawnOnHit = spawn;
                     }
 
-                    component.m_spawnOnHitChance = projectile.m_spawnOnHitChance;
+                    if (!projectile.m_configKey.IsNullOrWhiteSpace() && !projectile.m_configGroup.IsNullOrWhiteSpace())
+                    {
+                        var chance = NecrotisPlugin._Plugin.config(projectile.m_configGroup, projectile.m_configKey,
+                            projectile.m_spawnOnHitChance,
+                            new ConfigDescription("Set chance to spawn", new AcceptableValueRange<float>(0f, 1f)));
+                        component.m_spawnOnHitChance = chance.Value;
+                        chance.SettingChanged += (sender, args) => component.m_spawnOnHitChance = chance.Value;
+                    }
+                    else
+                    {
+                        component.m_spawnOnHitChance = projectile.m_spawnOnHitChance;
+                    }
                 }
 
                 if (projectile.m_hitEffects.Count > 0)
@@ -825,12 +846,12 @@ public class FaunaManager
             RegisterToZNetScene(__instance, prefab);
         }
         
-        foreach (var projectile in m_projectileSpawns)
+        foreach (ProjectileSpawnAbility? projectile in m_projectileSpawns)
         {
             GameObject prefab = projectile.m_bundle.LoadAsset<GameObject>(projectile.m_name);
             if (!prefab) continue;
 
-            foreach (var critter in projectile.m_spawnPrefabs)
+            foreach (string? critter in projectile.m_spawnPrefabs)
             {
                 CreateFriendly(critter);
                 CreateClone(critter);
@@ -935,8 +956,28 @@ public class FaunaManager
         public void AddSpawnEffect(string name) => m_spawnEffects.Add(name);
         public void AddPreSpawnEffect(string name) => m_preSpawnEffects.Add(name);
     }
+
+    public static List<AOEData> m_aoe = new();
+
+    public class AOEData
+    {
+        public readonly string m_name;
+        public readonly AssetBundle m_bundle;
+        public readonly List<string> m_hitEffects = new();
+
+        public AOEData(string name, AssetBundle bundle)
+        {
+            m_name = name;
+            m_bundle = bundle;
+            m_aoe.Add(this);
+        }
+
+        public void AddHitEffect(string effectName) => m_hitEffects.Add(effectName);
+    }
     public class ProjectileData
     {
+        public string m_configGroup = "";
+        public string m_configKey = "";
         public readonly string m_name;
         public readonly List<string> m_hitEffects = new();
         public readonly List<string> m_hitWaterEffects = new();
@@ -957,6 +998,12 @@ public class FaunaManager
         public void AddSpawnOnHit(string name) => m_spawnOnHit = name;
         public void SetSpawnOnHitChance(float value) => m_spawnOnHitChance = value;
         public void AddRandomSpawnOnHit(string name) => m_randomSpawnOnHit.Add(name);
+
+        public void SetConfigKeys(string key, string group)
+        {
+            m_configKey = key;
+            m_configGroup = group;
+        }
     }
 
     public class Bird
