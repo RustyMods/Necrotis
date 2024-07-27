@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Configuration;
 using HarmonyLib;
+using Managers;
 using Necrotis.Behaviors;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -12,54 +13,57 @@ namespace Necrotis.Managers;
 public static class AltarManager
 {
     private static readonly int EmissionColor = Shader.PropertyToID("_EmissionColor");
+    public static void LoadAssets(ObjectDB __instance)
+    {
+        if (!ZNetScene.instance) return;
+        CloneAssets(__instance);
 
-    [HarmonyPriority(Priority.LowerThanNormal)]
+        GameObject item = __instance.GetItemPrefab(NecrotisPlugin._offeringItem.Value);
+        if (!item) item = __instance.GetItemPrefab("DragonEgg");
+
+        if (!item.TryGetComponent(out ItemDrop offering)) return;
+        
+        GameObject altar = ZNetScene.instance.GetPrefab("Necromancer_Pedestal");
+        if (!altar) return;
+
+        if (!altar.TryGetComponent(out OfferingBowl offeringBowl)) return;
+
+        GameObject prefab = ZNetScene.instance.GetPrefab("Necromancer_Altar");
+        if (!prefab) return;
+
+        if (!prefab.TryGetComponent(out ItemStand itemStand)) return;
+        itemStand.m_supportedItems.Clear();
+        itemStand.m_supportedItems.Add(offering);
+        itemStand.m_effects.m_effectPrefabs = GetEffects(new() { "vfx_pickable_pick", "sfx_pickable_pick" });
+        itemStand.m_destroyEffects.m_effectPrefabs = GetEffects(new() { "fx_totem_destroyed" });
+
+        offeringBowl.m_bossItem = offering;
+        offeringBowl.m_itemstandMaxRange = NecrotisPlugin._itemStandMaxRange.Value;
+
+        offeringBowl.m_fuelAddedEffects.m_effectPrefabs = GetEffects(new() { "sfx_offering", "vfx_offering" });
+        offeringBowl.m_spawnBossStartEffects.m_effectPrefabs = GetEffects(new() { "vfx_prespawn_fader", "sfx_prespawn" });
+        offeringBowl.m_spawnBossDoneffects.m_effectPrefabs = GetEffects(new() { "vfx_spawn", "sfx_spawn", "fx_Fader_Fissure_Prespawn", "fx_Fader_Roar_Projectile_Hit", "fx_Fader_Roar_Projectile_Hit" });
+
+        NecrotisPlugin._offeringItem.SettingChanged += (sender, args) =>
+        {
+            GameObject newItem = __instance.GetItemPrefab(NecrotisPlugin._offeringItem.Value);
+            if (!newItem) return;
+            if (!newItem.TryGetComponent(out ItemDrop component)) return;
+            offeringBowl.m_bossItem = component;
+            itemStand.m_supportedItems.Clear();
+            itemStand.m_supportedItems.Add(component);
+        };
+        NecrotisPlugin._itemStandMaxRange.SettingChanged += (sender, args) =>
+            offeringBowl.m_itemstandMaxRange = NecrotisPlugin._itemStandMaxRange.Value;
+    }
+
+    [HarmonyPriority(Priority.Last)]
     [HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
     private static class Finalize_Altar
     {
         private static void Postfix(ObjectDB __instance)
         {
-            if (!ZNetScene.instance) return;
-            CloneAssets(__instance);
-
-            GameObject item = __instance.GetItemPrefab(NecrotisPlugin._offeringItem.Value);
-            if (!item) item = __instance.GetItemPrefab("DragonEgg");
-
-            if (!item.TryGetComponent(out ItemDrop offering)) return;
-            
-            GameObject altar = ZNetScene.instance.GetPrefab("Necromancer_Pedestal");
-            if (!altar) return;
-
-            if (!altar.TryGetComponent(out OfferingBowl offeringBowl)) return;
-
-            GameObject prefab = ZNetScene.instance.GetPrefab("Necromancer_Altar");
-            if (!prefab) return;
-
-            if (!prefab.TryGetComponent(out ItemStand itemStand)) return;
-            itemStand.m_supportedItems.Clear();
-            itemStand.m_supportedItems.Add(offering);
-            itemStand.m_effects.m_effectPrefabs = GetEffects(new() { "vfx_pickable_pick", "sfx_pickable_pick" });
-            itemStand.m_destroyEffects.m_effectPrefabs = GetEffects(new() { "fx_totem_destroyed" });
-
-            offeringBowl.m_bossItem = offering;
-            offeringBowl.m_itemstandMaxRange = NecrotisPlugin._itemStandMaxRange.Value;
-
-            offeringBowl.m_fuelAddedEffects.m_effectPrefabs = GetEffects(new() { "sfx_offering", "vfx_offering" });
-            offeringBowl.m_spawnBossStartEffects.m_effectPrefabs = GetEffects(new() { "vfx_prespawn_fader", "sfx_prespawn" });
-            offeringBowl.m_spawnBossDoneffects.m_effectPrefabs = GetEffects(new() { "vfx_spawn", "sfx_spawn", "fx_Fader_Fissure_Prespawn", "fx_Fader_Roar_Projectile_Hit", "fx_Fader_Roar_Projectile_Hit" });
-
-            NecrotisPlugin._offeringItem.SettingChanged += (sender, args) =>
-            {
-                GameObject newItem = __instance.GetItemPrefab(NecrotisPlugin._offeringItem.Value);
-                if (!newItem) return;
-                if (!newItem.TryGetComponent(out ItemDrop component)) return;
-                offeringBowl.m_bossItem = component;
-                itemStand.m_supportedItems.Clear();
-                itemStand.m_supportedItems.Add(component);
-            };
-            NecrotisPlugin._itemStandMaxRange.SettingChanged += (sender, args) =>
-                offeringBowl.m_itemstandMaxRange = NecrotisPlugin._itemStandMaxRange.Value;
-            
+            LoadAssets(__instance);
         }
     }
     
@@ -85,7 +89,23 @@ public static class AltarManager
                 key = keyDrop;
             }
         }
-        
+        CloneQueenDoor(key, keyConfig);
+        CloneIronGrate(key, keyConfig);
+        CloneBoneSpawner();
+        CreateHeart(__instance);
+        UpdateRegisteredItems();
+    }
+
+    public static void UpdateRegisteredItems()
+    {
+        foreach (var item in Item.registeredItems)
+        {
+            item.ReloadCraftingConfiguration();
+        }
+    }
+
+    private static void CloneQueenDoor(ItemDrop key, ConfigEntry<string> keyConfig)
+    {
         GameObject gate = ZNetScene.instance.GetPrefab("dungeon_queen_door");
         if (!gate) return;
         GameObject clone = Object.Instantiate(gate, NecrotisPlugin._Root.transform, false);
@@ -98,7 +118,7 @@ public static class AltarManager
             component.m_canNotBeClosed = false;
             keyConfig.SettingChanged += (sender, args) =>
             {
-                var item = __instance.GetItemPrefab(keyConfig.Value);
+                var item = ObjectDB.instance.GetItemPrefab(keyConfig.Value);
                 if (!item) return;
                 if (!item.TryGetComponent(out ItemDrop configComponent)) return;
                 component.m_keyItem = configComponent;
@@ -157,10 +177,7 @@ public static class AltarManager
         
         RegisterToHammer(clone);
         RegisterToScene(clone);
-        
-        CloneIronGrate(key, keyConfig);
-        CloneBoneSpawner();
-        CreateHeart(__instance);
+        PatchDoors.RegisterDoorToPatch(clone.name);
     }
 
     private static void CloneIronGrate(ItemDrop key, ConfigEntry<string> keyConfig)
@@ -205,6 +222,7 @@ public static class AltarManager
         
         RegisterToHammer(clone);
         RegisterToScene(clone);
+        PatchDoors.RegisterDoorToPatch(clone.name);
     }
 
     private static void CloneBoneSpawner()
@@ -257,14 +275,14 @@ public static class AltarManager
 
         if (clone.TryGetComponent(out Destructible destructible))
         {
-            var health = NecrotisPlugin._Plugin.config("Necromancer Bone Pile", "Health", destructible.m_health, "Set health");
+            ConfigEntry<float> health = NecrotisPlugin._Plugin.config("Necromancer Bone Pile", "Health", destructible.m_health, "Set health");
             destructible.m_health = health.Value;
             health.SettingChanged += (sender, args) => destructible.m_health = health.Value;
         }
 
         if (clone.TryGetComponent(out SpawnArea spawnArea))
         {
-            var spawns = NecrotisPlugin._Plugin.config("Necromancer Bone Pile", "Spawns",
+            ConfigEntry<string> spawns = NecrotisPlugin._Plugin.config("Necromancer Bone Pile", "Spawns",
                 "Skeleton:1:3:1,Skeleton,Skeleton_Poison:1:3:0.5,Wraith:1:3:0.3",
                 "Set spawns, [prefab]:[minLevel]:[maxLevel]:[weight]");
             spawnArea.m_prefabs = GetSpawns(spawns.Value);
@@ -448,6 +466,7 @@ public static class AltarManager
         if (!heart) return;
         GameObject clone = Object.Instantiate(heart, NecrotisPlugin._Root.transform, false);
         clone.name = "NecromancerHeart";
+        clone.transform.Find("heart").localScale = new Vector3(0.2f, 0.2f, 0.2f);
         if (!clone.TryGetComponent(out ItemDrop component)) return;
         component.m_itemData.m_shared.m_name = "$item_necromancer_heart";
         component.m_itemData.m_shared.m_description = "$item_necromancer_heart_desc";

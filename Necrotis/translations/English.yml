@@ -22,3 +22,4 @@ random_necromancer_speak2: 'From the depths of darkness, we call the powers of t
 random_necromancer_speak3: 'Rise forth the shadows and specters'
 msg_necromancer_spawn: 'Unholy manifestation of dark magic has appeared'
 msg_necromancer_death: 'Begone the powers of the dark lord'
+se_necromancer_tooltip: 'Imbued with the powers of the necromancer'

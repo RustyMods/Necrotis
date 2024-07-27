@@ -10,6 +10,7 @@ using HarmonyLib;
 using JetBrains.Annotations;
 using LocalizationManager;
 using Managers;
+using Necrotis.Behaviors;
 using Necrotis.Managers;
 using PieceManager;
 using ServerSync;
@@ -22,7 +23,7 @@ namespace Necrotis
     public class NecrotisPlugin : BaseUnityPlugin
     {
         internal const string ModName = "Necrotis";
-        internal const string ModVersion = "1.0.1";
+        internal const string ModVersion = "1.0.2";
         internal const string Author = "RustyMods";
         private const string ModGUID = Author + "." + ModName;
         private static readonly string ConfigFileName = ModGUID + ".cfg";
@@ -72,20 +73,31 @@ namespace Necrotis
 
         private void LoadItems()
         {
+            SE_Necromancer se = ScriptableObject.CreateInstance<SE_Necromancer>();
+            se.name = "SE_NecromancerSet";
+            se.m_name = "$enemy_necromancer";
+            se.m_tooltip = "$se_necromancer_tooltip";
+            se.m_speedModifier = 0.1f;
+            se.m_addMaxCarryWeight = 50;
+            se.m_jumpModifier = new Vector3(0f, 0.1f, 0f);
             Item Mummy = new Item(_AssetBundle, "NecromancerTotem");
             Mummy.Name.English("Necromancer Totem");
             Mummy.Description.English("Rumored to conjure the necromancer from his slumber");
             Mummy.Crafting.Add(global::Managers.CraftingTable.ArtisanTable, 2);
             Mummy.RequiredItems.Add("SwordCheat", 1, 1);
             Mummy.Configurable = Configurability.Drop;
-
+            
             Item SwordNecro = new Item(_AssetBundle, "SwordNecro");
             SwordNecro.Name.English("Sword Necro Ghoul");
             SwordNecro.Description.English("Bestows upon its bearer the eerie gift to summon the undead from their slumber.");
             SwordNecro.Crafting.Add(global::Managers.CraftingTable.Forge, 4);
             SwordNecro.RequiredItems.Add("FlametalNew", 10);
+            SwordNecro.RequiredItems.Add("Eitr", 5);
+            SwordNecro.RequiredItems.Add("CharredBone", 10);
             SwordNecro.RequiredItems.Add("NecromancerTotem", 1);
             SwordNecro.RequiredUpgradeItems.Add("FlametalNew", 5);
+            SwordNecro.RequiredUpgradeItems.Add("Eitr", 2);
+            SwordNecro.RequiredUpgradeItems.Add("CharredBone", 5);
             SwordNecro.AddHitEffect("vfx_HitSparks");
             SwordNecro.AddHitEffect("sfx_sword_hit");
             SwordNecro.AddHitEffect("fx_hit_camshake");
@@ -120,8 +132,6 @@ namespace Necrotis
 
             FaunaManager.ProjectileSpawnAbility SwordSpawner = new FaunaManager.ProjectileSpawnAbility("sword_necro_spawn", _AssetBundle);
             SwordSpawner.AddSpawn("Draugr_Friendly");
-            // SwordSpawner.AddSpawn("Abomination_Friendly");
-            // SwordSpawner.AddSpawn("Wraith_Friendly");
             SwordSpawner.AddPreSpawnEffect("fx_summon_skeleton_spawn");
             SwordSpawner.AddPreSpawnEffect("fx_Fader_Fissure_Prespawn");
             
@@ -129,6 +139,50 @@ namespace Necrotis
             SwordSpawner1.AddSpawn("Charred_Melee_Friendly");
             SwordSpawner1.AddPreSpawnEffect("fx_summon_skeleton_spawn");
             SwordSpawner1.AddPreSpawnEffect("fx_Fader_Fissure_Prespawn");
+
+            Item Helmet = new(_AssetBundle, "HelmetNecromancer");
+            Helmet.Name.English("Necromancer's Hood");
+            Helmet.Description.English("Imbued with the powers of the necromancer, this hood will grant its wearer access into the underworld");
+            Helmet.AddArmorMaterial("HelmetMage_Ashlands");
+            Helmet.Crafting.Add(global::Managers.CraftingTable.BlackForge, 2);
+            Helmet.AddSetStatusEffect(se);
+            Helmet.RequiredItems.Add("FlametalNew", 10);
+            Helmet.RequiredItems.Add("AskHide", 10);
+            Helmet.RequiredItems.Add("LinenThread", 20);
+            Helmet.RequiredItems.Add("NecromancerHeart", 1);
+            Helmet.RequiredUpgradeItems.Add("FlametalNew", 5);
+            Helmet.RequiredUpgradeItems.Add("AskHide", 5);
+            Helmet.RequiredUpgradeItems.Add("LinenThread", 10);
+
+            Item Chest = new(_AssetBundle, "ArmorNecromancerChest");
+            Chest.Name.English("Necromancer's Chestplate");
+            Chest.Description.English("The runic spell carved on the back of this cuirass protects its wearer from the dark arts");
+            Chest.AddArmorMaterial("ArmorMageChest_Ashlands");
+            Chest.Crafting.Add(global::Managers.CraftingTable.BlackForge, 2);
+            Chest.AddSetStatusEffect(se);
+            Chest.RequiredItems.Add("FlametalNew", 10);
+            Chest.RequiredItems.Add("AskHide", 10);
+            Chest.RequiredItems.Add("Eitr", 20);
+            Chest.RequiredItems.Add("NecromancerHeart", 1);
+            Chest.RequiredUpgradeItems.Add("FlametalNew", 5);
+            Chest.RequiredUpgradeItems.Add("AskHide", 5);
+            Chest.RequiredUpgradeItems.Add("Eitr", 10);
+            Chest.AddHeatResistance(0.2f);
+
+            Item Legs = new(_AssetBundle, "ArmorNecromancerLegs");
+            Legs.Name.English("Necromancer's Trousers");
+            Legs.Description.English("Enchanted by the necromancer, the skull protects its wearer from the undead");
+            Legs.AddArmorMaterial("ArmorMageLegs_Ashlands");
+            Legs.Crafting.Add(global::Managers.CraftingTable.BlackForge, 2);
+            Legs.AddSetStatusEffect(se);
+            Legs.RequiredItems.Add("FlametalNew", 10);
+            Legs.RequiredItems.Add("AskHide", 10);
+            Legs.RequiredItems.Add("Eitr", 20);
+            Legs.RequiredItems.Add("NecromancerHeart", 1);
+            Legs.RequiredUpgradeItems.Add("FlametalNew", 5);
+            Legs.RequiredUpgradeItems.Add("AskHide", 5);
+            Legs.RequiredUpgradeItems.Add("Eitr", 10);
+            Legs.AddHeatResistance(0.2f);
         }
 
         private void LoadMonsters()
@@ -194,7 +248,7 @@ namespace Necrotis
             Altar.Name.English("Necromancer Altar");
             Altar.Description.English("");
             Altar.Crafting.Set(CraftingTable.StoneCutter);
-            Altar.RequiredItems.Add("Stone", 10, true);
+            Altar.RequiredItems.Add("Grausten", 10, true);
             Altar.Category.Set("Necromancer");
             Altar.PlaceEffects = new() { "vfx_Place_workbench", "sfx_build_hammer_stone" };
             Altar.DestroyedEffects = new() { "vfx_RockDestroyed", "sfx_rock_destroyed" };
@@ -205,7 +259,7 @@ namespace Necrotis
             Brazier.Name.English("Necromancer Brazier");
             Brazier.Description.English("");
             Brazier.Crafting.Set(CraftingTable.StoneCutter);
-            Brazier.RequiredItems.Add("Stone", 10, true);
+            Brazier.RequiredItems.Add("Grausten", 10, true);
             Brazier.Category.Set("Necromancer");
             Brazier.PlaceEffects = new() { "vfx_Place_workbench", "sfx_build_hammer_stone" };
             Brazier.DestroyedEffects = new() { "vfx_RockDestroyed", "sfx_rock_destroyed" };
@@ -216,7 +270,7 @@ namespace Necrotis
             Runestone.Name.English("Necromancer Runestone");
             Runestone.Description.English("");
             Runestone.Crafting.Set(CraftingTable.StoneCutter);
-            Runestone.RequiredItems.Add("Stone", 10, true);
+            Runestone.RequiredItems.Add("Grausten", 10, true);
             Runestone.PlaceEffects = new() { "vfx_Place_workbench", "sfx_build_hammer_stone" };
             Runestone.Category.Set("Necromancer");
             Runestone.DestroyedEffects = new() { "vfx_RockDestroyed", "sfx_rock_destroyed" };
@@ -227,7 +281,7 @@ namespace Necrotis
             Pillar.Name.English("Necromancer Pillar");
             Pillar.Description.English("");
             Pillar.Crafting.Set(CraftingTable.StoneCutter);
-            Pillar.RequiredItems.Add("Stone", 10, true);
+            Pillar.RequiredItems.Add("Grausten", 10, true);
             Pillar.PlaceEffects = new() { "vfx_Place_workbench", "sfx_build_hammer_stone" };
             Pillar.Category.Set("Necromancer");
             Pillar.DestroyedEffects = new() { "vfx_RockDestroyed", "sfx_rock_destroyed" };
@@ -238,7 +292,8 @@ namespace Necrotis
             Lamp.Name.English("Necromancer Lamps");
             Lamp.Description.English("");
             Lamp.Crafting.Set(CraftingTable.StoneCutter);
-            Lamp.RequiredItems.Add("Stone", 10, true);
+            Lamp.RequiredItems.Add("Grausten", 10, true);
+            Lamp.RequiredItems.Add("FlametalNew", 1, true);
             Lamp.PlaceEffects = new() { "vfx_Place_workbench", "sfx_build_hammer_stone" };
             Lamp.Category.Set("Necromancer");
             Lamp.DestroyedEffects = new() { "vfx_RockDestroyed", "sfx_rock_destroyed" };
@@ -249,7 +304,8 @@ namespace Necrotis
             WallLamp.Name.English("Necromancer Wall Lamp");
             WallLamp.Description.English("");
             WallLamp.Crafting.Set(CraftingTable.StoneCutter);
-            WallLamp.RequiredItems.Add("Stone", 10, true);
+            WallLamp.RequiredItems.Add("Grausten", 10, true);
+            WallLamp.RequiredItems.Add("FlametalNew", 1, true);
             WallLamp.PlaceEffects = new() { "vfx_Place_workbench", "sfx_build_hammer_stone" };
             WallLamp.Category.Set("Necromancer");
             WallLamp.DestroyedEffects = new() { "vfx_RockDestroyed", "sfx_rock_destroyed" };
@@ -260,7 +316,7 @@ namespace Necrotis
             GlowRock1.Name.English("Necromancer Glow Rock 1");
             GlowRock1.Description.English("");
             GlowRock1.Crafting.Set(CraftingTable.StoneCutter);
-            GlowRock1.RequiredItems.Add("Stone", 10, true);
+            GlowRock1.RequiredItems.Add("Grausten", 10, true);
             GlowRock1.PlaceEffects = new() { "vfx_Place_workbench", "sfx_build_hammer_stone" };
             GlowRock1.Category.Set("Necromancer");
             GlowRock1.DestroyedEffects = new() { "vfx_RockDestroyed", "sfx_rock_destroyed" };
@@ -271,7 +327,7 @@ namespace Necrotis
             GlowRock2.Name.English("Necromancer Glow Rock 2");
             GlowRock2.Description.English("");
             GlowRock2.Crafting.Set(CraftingTable.StoneCutter);
-            GlowRock2.RequiredItems.Add("Stone", 10, true);
+            GlowRock2.RequiredItems.Add("Grausten", 10, true);
             GlowRock2.PlaceEffects = new() { "vfx_Place_workbench", "sfx_build_hammer_stone" };
             GlowRock2.Category.Set("Necromancer");
             GlowRock2.DestroyedEffects = new() { "vfx_RockDestroyed", "sfx_rock_destroyed" };
@@ -282,7 +338,7 @@ namespace Necrotis
             GlowRock3.Name.English("Necromancer Glow Rock 3");
             GlowRock3.Description.English("");
             GlowRock3.Crafting.Set(CraftingTable.StoneCutter);
-            GlowRock3.RequiredItems.Add("Stone", 10, true);
+            GlowRock3.RequiredItems.Add("Grausten", 10, true);
             GlowRock3.PlaceEffects = new() { "vfx_Place_workbench", "sfx_build_hammer_stone" };
             GlowRock3.Category.Set("Necromancer");
             GlowRock3.DestroyedEffects = new() { "vfx_RockDestroyed", "sfx_rock_destroyed" };
@@ -293,7 +349,7 @@ namespace Necrotis
             Mummy1.Name.English("Necromancer Mummy 1");
             Mummy1.Description.English("");
             Mummy1.Crafting.Set(CraftingTable.StoneCutter);
-            Mummy1.RequiredItems.Add("Stone", 10, true);
+            Mummy1.RequiredItems.Add("Grausten", 10, true);
             Mummy1.PlaceEffects = new() { "vfx_Place_workbench", "sfx_build_hammer_stone" };
             Mummy1.Category.Set("Necromancer");
             Mummy1.RandomSpeakEffects = new List<string>() { "fx_deadspeak_vo" };
@@ -305,7 +361,7 @@ namespace Necrotis
             Mummy2.Name.English("Necromancer Mummy 2");
             Mummy2.Description.English("");
             Mummy2.Crafting.Set(CraftingTable.StoneCutter);
-            Mummy2.RequiredItems.Add("Stone", 10, true);
+            Mummy2.RequiredItems.Add("Grausten", 10, true);
             Mummy2.PlaceEffects = new() { "vfx_Place_workbench", "sfx_build_hammer_stone" };
             Mummy2.Category.Set("Necromancer");
             Mummy2.RandomSpeakEffects = new List<string>() { "fx_deadspeak_vo" };

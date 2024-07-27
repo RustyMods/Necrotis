@@ -88,6 +88,9 @@
         <Reference Include="UnityEngine">
             <HintPath>$(CorlibPath)\UnityEngine.dll</HintPath>
         </Reference>
+        <Reference Include="UnityEngine.AnimationModule">
+          <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Valheim\valheim_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
+        </Reference>
         <Reference Include="UnityEngine.AssetBundleModule">
             <HintPath>$(CorlibPath)\UnityEngine.AssetBundleModule.dll</HintPath>
         </Reference>
@@ -118,6 +121,8 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Behaviors\HeartSE.cs" />
+        <Compile Include="Behaviors\PatchDoors.cs" />
+        <Compile Include="Behaviors\SE_Necromancer.cs" />
         <Compile Include="Managers\AltarManager.cs" />
         <Compile Include="Managers\CreatureStatus.cs" />
         <Compile Include="Managers\FaunaManager.cs" />

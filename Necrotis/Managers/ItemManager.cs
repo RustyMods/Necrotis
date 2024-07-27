@@ -12,6 +12,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
 using JetBrains.Annotations;
+using Necrotis.Managers;
 using UnityEngine;
 
 namespace Managers;
@@ -203,7 +204,7 @@ public class Item
         public int quality;
     }
 
-    private static readonly List<Item> registeredItems = new();
+    public static readonly List<Item> registeredItems = new();
     private static readonly Dictionary<ItemDrop, Item> itemDropMap = new();
     private static Dictionary<Item, Dictionary<string, List<Recipe>>> activeRecipes = new();
     private static Dictionary<Recipe, ConfigEntryBase?> hiddenCraftRecipes = new();
@@ -278,7 +279,13 @@ public class Item
     internal List<Smelter.ItemConversion> conversions = new();
     public Dictionary<string, ItemRecipe> Recipes = new();
     public ItemEffects ItemEffects = new();
+    public string m_cloneArmorMaterial = "";
+    public StatusEffect? m_setStatusEffect;
+    public float m_heatResistance;
 
+    public void AddHeatResistance(float amount) => m_heatResistance = amount;
+    public void AddSetStatusEffect(StatusEffect se) => m_setStatusEffect = se;
+    public void AddArmorMaterial(string clone) => m_cloneArmorMaterial = clone;
     public void AddHitEffect(string name) => ItemEffects.HitEffects.Add(name);
     public void AddHitTerrainEffect(string name) => ItemEffects.HitTerrainEffects.Add(name);
     public void AddBlockEffect(string name) => ItemEffects.BlockEffects.Add(name);
@@ -1375,7 +1382,7 @@ public class Item
 
         hiddenCraftRecipes.Clear();
         hiddenUpgradeRecipes.Clear();
-
+        
         foreach (Item item in registeredItems)
         {
             item.registerRecipesInObjectDB(__instance);
@@ -1387,7 +1394,7 @@ public class Item
     internal static void AddItemEffects(ObjectDB __instance)
     {
         if (!ZNetScene.instance) return;
-        foreach (var item in registeredItems)
+        foreach (Item? item in registeredItems)
         {
             if (!item.Prefab.TryGetComponent(out ItemDrop component)) continue;
             AddEffect(item.ItemEffects.HitEffects, ref component.m_itemData.m_shared.m_hitEffect);
@@ -1397,6 +1404,28 @@ public class Item
             AddEffect(item.ItemEffects.HoldStartEffects, ref component.m_itemData.m_shared.m_holdStartEffect);
             AddEffect(item.ItemEffects.TriggerEffects, ref component.m_itemData.m_shared.m_triggerEffect);
             AddEffect(item.ItemEffects.TrailStartEffects, ref component.m_itemData.m_shared.m_trailStartEffect);
+
+            if (item.m_heatResistance > 0f)
+            {
+                component.m_itemData.m_shared.m_heatResistanceModifier = item.m_heatResistance;
+            }
+
+            if (item.m_setStatusEffect != null)
+            {
+                if (!__instance.m_StatusEffects.Contains(item.m_setStatusEffect))
+                {
+                    __instance.m_StatusEffects.Add(item.m_setStatusEffect);
+                }
+
+                component.m_itemData.m_shared.m_setStatusEffect = item.m_setStatusEffect;
+            }
+            
+            
+            if (item.m_cloneArmorMaterial.IsNullOrWhiteSpace()) continue;
+            var original = __instance.GetItemPrefab(item.m_cloneArmorMaterial);
+            if (!original) continue;
+            if (!original.TryGetComponent(out ItemDrop itemDrop)) continue;
+            component.m_itemData.m_shared.m_armorMaterial = itemDrop.m_itemData.m_shared.m_armorMaterial;
         }
     }
 
